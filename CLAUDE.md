@@ -45,6 +45,33 @@ venv\Scripts\activate     # Windows
 - US stocks: Use standard symbols (e.g., `AAPL`, `MSFT`)
 - Default symbols are pre-configured Japanese stocks
 
+## Test Data Management
+
+**Fetch test data (recommended before development):**
+```bash
+# Default Japanese stocks (8194.T, 9699.T, 9715.T)
+python fetch_test_data.py
+
+# Custom symbols
+python fetch_test_data.py --symbols AAPL,MSFT,GOOGL
+
+# Custom period and delay
+python fetch_test_data.py --period 1mo --delay 10
+
+# Clean old files only
+python fetch_test_data.py --clean-only
+
+# See all options
+python fetch_test_data.py --help
+```
+
+**Generated test files:**
+- `test_data/{symbol}_YYYYMMDD_HHMMSS_history.json` - Price history data
+- `test_data/{symbol}_YYYYMMDD_HHMMSS_info.json` - Company information
+
+**Using test data:**
+In the Streamlit app, select "テストデータ" from the sidebar to use saved data instead of live API calls.
+
 ## Data Fields
 
 The application calculates and displays:

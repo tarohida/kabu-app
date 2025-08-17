@@ -177,6 +177,7 @@
     "quoteSourceName": "Delayed Quote",
     "triggerable": false,
     "customPriceAlertConfidence": "LOW",
+    "longName": "Life Corporation",
     "hasPrePostMarketData": false,
     "firstTradeDateMilliseconds": 978307200000,
     "regularMarketChange": -16.0,
@@ -191,6 +192,8 @@
     "fiftyTwoWeekChangePercent": 40.256775,
     "earningsTimestampStart": 1751868000,
     "earningsTimestampEnd": 1752213600,
+    "marketState": "PREPRE",
+    "shortName": "LIFE CORPORATION",
     "isEarningsDateEstimate": true,
     "epsTrailingTwelveMonths": 207.7,
     "epsForward": 391.7,
@@ -198,7 +201,10 @@
     "fiftyDayAverageChangePercent": 0.06566544,
     "twoHundredDayAverageChange": 490.8225,
     "twoHundredDayAverageChangePercent": 0.24950597,
-    "marketState": "PREPRE",
+    "sourceInterval": 15,
+    "exchangeDataDelayedBy": 20,
+    "averageAnalystRating": "2.0 - Buy",
+    "cryptoTradeable": false,
     "corporateActions": [
       {
         "header": "Dividend",
@@ -220,13 +226,7 @@
     "esgPopulated": false,
     "regularMarketChangePercent": -0.64672595,
     "regularMarketPrice": 2458.0,
-    "sourceInterval": 15,
-    "exchangeDataDelayedBy": 20,
-    "averageAnalystRating": "2.0 - Buy",
-    "cryptoTradeable": false,
-    "shortName": "LIFE CORPORATION",
-    "longName": "Life Corporation",
     "trailingPegRatio": null
   },
-  "timestamp": "2025-08-18T03:31:56.784173"
+  "timestamp": "2025-08-18T04:10:20.807531"
 }

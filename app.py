@@ -28,17 +28,26 @@ def save_response_data(symbol, response_data, filename_suffix=""):
             import pandas as pd
             import numpy as np
             
-            if hasattr(obj, 'item'):  # numpy types
-                return obj.item()
-            elif isinstance(obj, pd.Timestamp):  # pandas Timestamp
+            if isinstance(obj, pd.Timestamp):  # pandas Timestamp first
                 return obj.isoformat()
+            elif isinstance(obj, (np.integer, np.floating)):  # numpy numbers
+                return obj.item()
+            elif hasattr(obj, 'item') and callable(getattr(obj, 'item')):  # other numpy types
+                return obj.item()
             elif hasattr(obj, 'isoformat'):  # datetime types
                 return obj.isoformat()
-            elif isinstance(obj, (np.integer, np.floating)):
-                return obj.item()
             elif isinstance(obj, dict):
-                return {str(k): convert_types(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
+                # Convert dict keys and values recursively
+                result = {}
+                for k, v in obj.items():
+                    # Convert keys (might be Timestamps)
+                    if isinstance(k, pd.Timestamp):
+                        key = k.isoformat()
+                    else:
+                        key = str(k)
+                    result[key] = convert_types(v)
+                return result
+            elif isinstance(obj, (list, tuple)):
                 return [convert_types(item) for item in obj]
             elif hasattr(obj, '__dict__'):
                 return str(obj)
