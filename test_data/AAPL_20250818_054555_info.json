@@ -222,7 +222,7 @@
     "language": "en-US",
     "region": "US",
     "typeDisp": "Equity",
-    "quoteSourceName": "Nasdaq Real Time Price",
+    "quoteSourceName": "Delayed Quote",
     "triggerable": true,
     "customPriceAlertConfidence": "HIGH",
     "corporateActions": [],
@@ -243,9 +243,9 @@
     "hasPrePostMarketData": true,
     "firstTradeDateMilliseconds": 345479400000,
     "marketState": "CLOSED",
-    "postMarketChangePercent": -0.177039,
+    "postMarketChangePercent": -0.1770386,
     "postMarketPrice": 231.18,
-    "postMarketChange": -0.410004,
+    "postMarketChange": -0.41000366,
     "regularMarketChange": -1.1900024,
     "regularMarketDayRange": "229.36 - 234.2214",
     "fullExchangeName": "NasdaqGS",
@@ -277,5 +277,5 @@
     "displayName": "Apple",
     "trailingPegRatio": 2.0905
   },
-  "timestamp": "2025-08-18T04:12:33.687071"
+  "timestamp": "2025-08-18T05:45:55.333017"
 }

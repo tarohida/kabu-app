@@ -234,14 +234,34 @@
     "quoteSourceName": "Nasdaq Real Time Price",
     "triggerable": true,
     "customPriceAlertConfidence": "HIGH",
-    "averageAnalystRating": "1.5 - Buy",
-    "cryptoTradeable": false,
+    "corporateActions": [
+      {
+        "header": "Dividend",
+        "message": "GOOGL announced a cash dividend of 0.21 with an ex-date of Sep. 8, 2025",
+        "meta": {
+          "eventType": "DIVIDEND",
+          "dateEpochMs": 1757304000000,
+          "amount": "0.21"
+        }
+      }
+    ],
+    "postMarketTime": 1755302399,
+    "regularMarketTime": 1755288001,
+    "exchange": "NMS",
+    "messageBoardId": "finmb_29096",
     "exchangeTimezoneName": "America/New_York",
     "exchangeTimezoneShortName": "EDT",
     "gmtOffSetMilliseconds": -14400000,
+    "market": "us_market",
     "esgPopulated": false,
+    "cryptoTradeable": false,
     "regularMarketChangePercent": 0.473042,
     "regularMarketPrice": 203.9,
+    "shortName": "Alphabet Inc.",
+    "longName": "Alphabet Inc.",
+    "hasPrePostMarketData": true,
+    "firstTradeDateMilliseconds": 1092922200000,
+    "marketState": "CLOSED",
     "postMarketChangePercent": 0.014473,
     "postMarketPrice": 203.93,
     "postMarketChange": 0.0295105,
@@ -272,28 +292,8 @@
     "twoHundredDayAverageChangePercent": 0.15325998,
     "sourceInterval": 15,
     "exchangeDataDelayedBy": 0,
-    "hasPrePostMarketData": true,
-    "firstTradeDateMilliseconds": 1092922200000,
-    "corporateActions": [
-      {
-        "header": "Dividend",
-        "message": "GOOGL announced a cash dividend of 0.21 with an ex-date of Sep. 8, 2025",
-        "meta": {
-          "eventType": "DIVIDEND",
-          "dateEpochMs": 1757304000000,
-          "amount": "0.21"
-        }
-      }
-    ],
-    "postMarketTime": 1755302399,
-    "regularMarketTime": 1755288001,
-    "exchange": "NMS",
-    "messageBoardId": "finmb_29096",
-    "market": "us_market",
-    "shortName": "Alphabet Inc.",
-    "marketState": "CLOSED",
-    "longName": "Alphabet Inc.",
+    "averageAnalystRating": "1.5 - Buy",
     "trailingPegRatio": 1.5156
   },
-  "timestamp": "2025-08-18T04:11:10.827888"
+  "timestamp": "2025-08-18T05:45:57.851201"
 }

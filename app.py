@@ -5,6 +5,7 @@ import logging
 import json
 import os
 from datetime import datetime, timedelta
+from stock_data import StockData, StockDataCollection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,35 +21,45 @@ def save_response_data(symbol, response_data, filename_suffix=""):
     """Save API response data to JSON file for testing"""
     try:
         os.makedirs("test_data", exist_ok=True)
+        
+        # Check if file already exists for this symbol and suffix
+        existing_files = [f for f in os.listdir("test_data") 
+                         if f.startswith(f"{symbol}_") and f.endswith(f"{filename_suffix}.json")]
+        
+        if existing_files:
+            logger.info(f"Test data already exists for {symbol}{filename_suffix}, skipping save")
+            return existing_files[0]
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"test_data/{symbol}_{timestamp}{filename_suffix}.json"
         
         # Convert numpy types to native Python types for JSON serialization
-        def convert_types(obj):
+        def convert_for_json(obj):
             import pandas as pd
             import numpy as np
             
-            if isinstance(obj, pd.Timestamp):  # pandas Timestamp first
+            if isinstance(obj, pd.Timestamp):
                 return obj.isoformat()
-            elif isinstance(obj, (np.integer, np.floating)):  # numpy numbers
+            elif isinstance(obj, (np.integer, np.floating)):
                 return obj.item()
-            elif hasattr(obj, 'item') and callable(getattr(obj, 'item')):  # other numpy types
+            elif hasattr(obj, 'item') and callable(getattr(obj, 'item')):
                 return obj.item()
-            elif hasattr(obj, 'isoformat'):  # datetime types
+            elif hasattr(obj, 'isoformat'):
                 return obj.isoformat()
             elif isinstance(obj, dict):
-                # Convert dict keys and values recursively
                 result = {}
                 for k, v in obj.items():
                     # Convert keys (might be Timestamps)
                     if isinstance(k, pd.Timestamp):
                         key = k.isoformat()
+                    elif isinstance(k, (int, float, bool, type(None))):
+                        key = k  # Keep JSON-compatible keys as-is
                     else:
-                        key = str(k)
-                    result[key] = convert_types(v)
+                        key = str(k)  # Convert other key types to string
+                    result[key] = convert_for_json(v)
                 return result
             elif isinstance(obj, (list, tuple)):
-                return [convert_types(item) for item in obj]
+                return [convert_for_json(item) for item in obj]
             elif hasattr(obj, '__dict__'):
                 return str(obj)
             return obj
@@ -58,7 +69,7 @@ def save_response_data(symbol, response_data, filename_suffix=""):
         serializable_data = copy.deepcopy(response_data)
         
         with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(serializable_data, f, ensure_ascii=False, indent=2, default=convert_types)
+            json.dump(serializable_data, f, ensure_ascii=False, indent=2, default=convert_for_json)
         
         logger.info(f"Saved response data to {filename}")
         return filename
@@ -77,7 +88,7 @@ def load_test_data(filename):
 
 # Abstract interface for stock data providers
 class StockDataProvider:
-    def fetch_data(self, symbol):
+    def fetch_data(self, symbol) -> StockData:
         raise NotImplementedError(f"fetch_data not implemented for symbol: {symbol}")
 
 class YahooFinanceProvider(StockDataProvider):
@@ -136,13 +147,27 @@ class YahooFinanceProvider(StockDataProvider):
                             'last_date': str(hist.index[-1]) if not hist.empty else None
                         }
                         
-                        # Save successful history response
+                        # Save successful history response with proper conversion
+                        hist_dict = {}
+                        for col in hist.columns:
+                            hist_dict[col] = {}
+                            for timestamp, value in hist[col].items():
+                                hist_dict[col][timestamp.isoformat()] = float(value) if value != 0 else 0.0
+                        
                         hist_data = {
                             'symbol': symbol,
-                            'history': hist.to_dict(),
-                            'timestamp': datetime.now().isoformat()
+                            'history': hist_dict,
+                            'timestamp': datetime.now().isoformat(),
+                            'data_points': len(hist),
+                            'date_range': {
+                                'start': hist.index[0].isoformat(),
+                                'end': hist.index[-1].isoformat()
+                            }
                         }
-                        save_response_data(symbol, hist_data, "_history")
+                        try:
+                            save_response_data(symbol, hist_data, "_history")
+                        except Exception as save_error:
+                            logger.warning(f"Could not save history data: {save_error}")
                         
                         logger.info(f"Got price from history for {symbol}: {price}")
                     else:
@@ -177,7 +202,10 @@ class YahooFinanceProvider(StockDataProvider):
                             'info': info,
                             'timestamp': datetime.now().isoformat()
                         }
-                        save_response_data(symbol, info_data, "_info")
+                        try:
+                            save_response_data(symbol, info_data, "_info")
+                        except Exception as save_error:
+                            logger.warning(f"Could not save info data: {save_error}")
                         
                         # Use price from history if we got it, otherwise try from info
                         if price is None:
@@ -240,12 +268,24 @@ class YahooFinanceProvider(StockDataProvider):
             'has_info': info is not None
         }
         
-        # Cache the result (including debug info)
-        result = (price, eps, bps, name, dividend_yield, info, debug_info)
-        st.session_state.stock_cache[symbol] = result
+        # Create StockData object
+        stock_data = StockData(
+            symbol=symbol,
+            price=price,
+            eps=eps,
+            bps=bps,
+            name=name,
+            dividend_yield=dividend_yield,
+            info=info,
+            history=None,  # Could add history data here if needed
+            debug_info=debug_info
+        )
+        
+        # Cache the result
+        st.session_state.stock_cache[symbol] = stock_data
         st.session_state.cache_timestamp[symbol] = current_time
         
-        return result
+        return stock_data
 
 class TestDataProvider(StockDataProvider):
     """Test provider using saved JSON data"""
@@ -337,8 +377,20 @@ class TestDataProvider(StockDataProvider):
             'has_info': info is not None
         }
         
+        # Create StockData object
+        stock_data = StockData(
+            symbol=symbol,
+            price=price,
+            eps=eps,
+            bps=bps,
+            name=name,
+            dividend_yield=dividend_yield,
+            info=info,
+            debug_info=debug_info
+        )
+        
         logger.info(f"Using test data for {symbol} - Price: {price}")
-        return (price, eps, bps, name, dividend_yield, info, debug_info)
+        return stock_data
 
 # Global provider instance
 if 'data_provider' not in st.session_state:
@@ -444,60 +496,28 @@ def main():
         if i > 0:
             time.sleep(2)  # Increased delay
         
-        fetch_result = st.session_state.data_provider.fetch_data(symbol)
-        if len(fetch_result) == 7:  # New format with debug info
-            price, eps, bps, name, dividend_yield, info, debug_info = fetch_result
-        else:  # Old format (from cache)
-            price, eps, bps, name, dividend_yield, info = fetch_result
-            debug_info = None
+        stock_data = st.session_state.data_provider.fetch_data(symbol)
 
         # Check if data fetching failed and store debug info
-        data_failed = (price is None or eps is None or bps is None)
-        if data_failed and debug_info:
-            debug_results.append(debug_info)
+        if not stock_data.has_financial_data():
+            debug_info = stock_data.debug_info()
+            if debug_info:
+                debug_results.append(debug_info)
 
-        if data_failed:
-            earnings_yield = "取得失敗"
-            bpr = "取得失敗"
-        else:
-            try:
-                earnings_yield = (eps / price) * 100 if price != 0 else None
-                bpr = (bps / price) * 100 if price != 0 else None
-            except Exception:
-                earnings_yield = None
-                bpr = None
-
-        logger.info(f"Final data for {symbol} - Price: {price}, EPS: {eps}, BPS: {bps}, Name: {name}")
-
-        # 配当利回りは dividendYield が配当利回り（率）ではなく配当金額（円）で返ってくる場合があるため調整
-        dividend_yield_rate = None
-        dividend_per_year = None
-        if dividend_yield is not None and price is not None and price != 0:
-            # dividendYield は配当利回り（率）なのでそのまま使用
-            dividend_yield_rate = dividend_yield * 100
-            # 年あたり配当は lastDividendValue を使用
-            last_dividend_value = info.get("dividendRate", None)
-            dividend_per_year = last_dividend_value
-        elif dividend_yield is not None:
-            # 配当利回り率が不明な場合は None
-            dividend_yield_rate = None
-            dividend_per_year = dividend_yield
-        else:
-            dividend_yield_rate = None
-            dividend_per_year = None
+        logger.info(f"Final data for {symbol} - Price: {stock_data.price()}, "
+                   f"EPS: {stock_data.eps()}, BPS: {stock_data.bps()}, "
+                   f"Name: {stock_data.company_name()}")
 
         results.append({
-            "銘柄コード": symbol,
-            "銘柄名": name if name is not None else "取得失敗",
-            "株価x": format_value(price),
-            "株価y": format_value(price),
-            "株価z": format_value(price),
-            "EPS": format_value(eps),
-            "BPS": format_value(bps),
-            "配当利回り (%)": format_value(dividend_yield_rate) if dividend_yield_rate is not None else "取得失敗",
-            "年あたり配当 (円)": format_value(dividend_per_year) if dividend_per_year is not None else "取得失敗",
-            "株式益利回り (%)": format_value(earnings_yield),
-            "株式純資産利回り (%)": format_value(bpr),
+            "銘柄コード": stock_data.symbol(),
+            "銘柄名": stock_data.company_name() or "取得失敗",
+            "株価": stock_data.format_price(),
+            "EPS": format_value(stock_data.eps()),
+            "BPS": format_value(stock_data.bps()),
+            "配当利回り (%)": stock_data.format_dividend_yield(),
+            "年あたり配当 (円)": format_value(stock_data.dividend_per_year()),
+            "株式益利回り (%)": stock_data.format_earnings_yield(),
+            "株式純資産利回り (%)": stock_data.format_bpr(),
         })
     
     # Clear progress indicators
@@ -522,28 +542,16 @@ def main():
     columns_order = [
         "銘柄コード",
         "銘柄名",
+        "株価",
         "株式益利回り (%)",
         "EPS",
-        "株価x",
         "株式純資産利回り (%)",
         "BPS",
-        "株価y",
         "配当利回り (%)",
-        "年あたり配当 (円)",
-        "株価z"
+        "年あたり配当 (円)"
     ]
 
-    # BPS / 株価 の列は削除し、代わりに BPS の横に株価の列を追加
-    # ただし現在は "株価 (BPS横)" カラムは作成しないように修正
-    # for i, row in enumerate(results):
-    #     results[i]["株価 (BPS横)"] = row.get("株価", "取得失敗")
-
-    df = pd.DataFrame(results)
-
-    # 重複カラムを避けるため、"株価 (BPS横)" カラムが存在すれば削除
-    if "株価 (BPS横)" in df.columns:
-        df = df.drop(columns=["株価 (BPS横)"])
-
+    # 最終的なDataFrame作成
     df = df[columns_order]
 
     # 株式益利回りとEPS、株価の関係を表形式で表示
