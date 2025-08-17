@@ -1,17 +1,53 @@
 import streamlit as st
 import yfinance as yf
+import time
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def fetch_data(symbol):
+    """Fetch stock data with improved error handling and rate limiting protection"""
     try:
         ticker = yf.Ticker(symbol)
-        info = ticker.info
-        price = info.get("currentPrice", None)
-        eps = info.get("trailingEps", None)
-        bps = info.get("bookValue", None)
-        name = info.get("shortName", None)
-        dividend_yield = info.get("dividendYield", None)
+        
+        # First try to get basic info
+        info = None
+        price = None
+        eps = None
+        bps = None
+        name = None
+        dividend_yield = None
+        
+        # Try to get info with rate limit handling
+        try:
+            info = ticker.info
+            if info:
+                price = info.get("currentPrice", None) or info.get("regularMarketPrice", None)
+                eps = info.get("trailingEps", None)
+                bps = info.get("bookValue", None)
+                name = info.get("shortName", None) or info.get("longName", None)
+                dividend_yield = info.get("dividendYield", None)
+                logger.info(f"Successfully fetched info for {symbol}")
+            else:
+                logger.warning(f"No info data available for {symbol}")
+        except Exception as info_error:
+            logger.warning(f"Could not fetch info for {symbol}: {str(info_error)}")
+            
+            # Fallback: try to get price from recent history
+            try:
+                hist = ticker.history(period="1d")
+                if not hist.empty:
+                    price = hist['Close'].iloc[-1]
+                    logger.info(f"Got price from history for {symbol}: {price}")
+            except Exception as hist_error:
+                logger.warning(f"Could not fetch history for {symbol}: {str(hist_error)}")
+        
         return price, eps, bps, name, dividend_yield, info
-    except Exception:
+        
+    except Exception as e:
+        logger.error(f"Error fetching data for {symbol}: {str(e)}")
         return None, None, None, None, None, None
 
 def format_value(value):
@@ -39,7 +75,11 @@ def main():
         return
 
     results = []
-    for symbol in symbols:
+    for i, symbol in enumerate(symbols):
+        # Add small delay between requests to avoid rate limiting
+        if i > 0:
+            time.sleep(1)
+        
         price, eps, bps, name, dividend_yield, info = fetch_data(symbol)
 
         if price is None or eps is None or bps is None:
@@ -53,9 +93,7 @@ def main():
                 earnings_yield = None
                 bpr = None
 
-        import logging
-        logging.basicConfig(level=logging.INFO)
-        logging.info(f"API info for {symbol}: {info}")
+        logger.info(f"Final data for {symbol} - Price: {price}, EPS: {eps}, BPS: {bps}, Name: {name}")
 
         # 配当利回りは dividendYield が配当利回り（率）ではなく配当金額（円）で返ってくる場合があるため調整
         dividend_yield_rate = None
