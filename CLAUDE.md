@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Japanese stock analysis Streamlit application that displays earnings yield and book-to-price ratio (BPR) for Japanese stocks using the yfinance library.
+This is a Japanese stock analysis Streamlit application that displays earnings yield and book-to-price ratio (BPR) for Japanese stocks using the yfinance library. The application uses dependency injection architecture for data providers and object-oriented design for stock data representation.
 
 ## Development Commands
 
@@ -13,11 +13,17 @@ This is a Japanese stock analysis Streamlit application that displays earnings y
 streamlit run app.py
 ```
 
-**Install dependencies:**
+**Run unit tests:**
 ```bash
-pip install -r requirements.txt
+python test_stock_data.py
 ```
-Note: Currently uses a virtual environment in `venv/` with dependencies managed manually.
+
+**Install dependencies (manual):**
+Dependencies are managed via virtual environment. Key requirements:
+- streamlit
+- yfinance 
+- pandas
+- numpy
 
 **Activate virtual environment:**
 ```bash
@@ -26,18 +32,44 @@ source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate     # Windows
 ```
 
-## Architecture
+## Architecture Overview
 
-- **Single-file application:** All functionality is contained in `app.py`
-- **Main function:** `main()` handles the Streamlit UI and orchestrates data fetching
-- **Data fetching:** `fetch_data(symbol)` retrieves stock data from Yahoo Finance using yfinance
-- **Data formatting:** `format_value(value)` handles display formatting and error states
+### Core Components
+
+1. **app.py** - Main Streamlit application with dependency injection pattern
+   - `YahooFinanceProvider` - Live Yahoo Finance API data fetching with retry logic
+   - `TestDataProvider` - JSON file-based test data provider
+   - `StockDataProvider` - Abstract interface for data providers
+
+2. **stock_data.py** - Object-oriented data models
+   - `StockData` - Individual stock with method-based parameter access
+   - `StockDataCollection` - Batch operations on multiple stocks
+
+3. **fetch_test_data.py** - CLI tool for test data management
+4. **test_stock_data.py** - Comprehensive unit tests using real JSON test data
+
+### Data Provider Pattern
+
+The application uses dependency injection to switch between live API and test data:
+- Runtime provider selection via Streamlit sidebar
+- Cached data providers in session state
+- Unified `StockData` object returned by all providers
+- Test data automatically loaded from `test_data/` directory
+
+### StockData Class Design
+
+All stock information accessed through methods, not direct attributes:
+- Basic properties: `symbol()`, `price()`, `eps()`, `bps()`, `company_name()`
+- Calculated metrics: `earnings_yield()`, `bpr()`, `dividend_yield_percent()`
+- Formatting methods: `format_price()`, `format_earnings_yield()`, `format_bpr()`
+- Data quality: `is_valid()`, `has_financial_data()`, `completeness_score()`
 
 ## Key Dependencies
 
 - **streamlit:** Web application framework
-- **yfinance:** Yahoo Finance API client for stock data
-- **pandas:** Data manipulation and display
+- **yfinance:** Yahoo Finance API client with rate limiting issues
+- **pandas:** Data manipulation and JSON timestamp handling
+- **numpy:** Numeric computations
 
 ## Stock Symbol Format
 
@@ -69,8 +101,18 @@ python fetch_test_data.py --help
 - `test_data/{symbol}_YYYYMMDD_HHMMSS_history.json` - Price history data
 - `test_data/{symbol}_YYYYMMDD_HHMMSS_info.json` - Company information
 
+**File deduplication:**
+The app automatically prevents duplicate test files by checking for existing files before saving new ones.
+
 **Using test data:**
 In the Streamlit app, select "テストデータ" from the sidebar to use saved data instead of live API calls.
+
+## Yahoo Finance API Challenges
+
+- **Rate limiting:** Strict limits requiring retry logic with exponential backoff
+- **Japanese stocks:** More prone to failures than US stocks
+- **JSON serialization:** pandas Timestamp objects require special handling for JSON saves
+- **Data inconsistency:** Some fields may be missing or None
 
 ## Data Fields
 
@@ -84,6 +126,26 @@ The application calculates and displays:
 ## UI Features
 
 - Comma-separated symbol input
+- Data provider selection (Yahoo Finance API vs テストデータ)
 - Responsive table with horizontal scrolling
 - Fixed header and sticky columns for better navigation
 - Custom CSS styling for Japanese content display
+- Progress indicators during data fetching
+- Debug information display for failed requests
+
+## Development Patterns
+
+**Adding new financial metrics:**
+1. Add calculation method to `StockData` class
+2. Add formatting method following `format_*()` pattern
+3. Update `to_dict()` method for display
+4. Add to unit tests in `test_stock_data.py`
+
+**Extending data providers:**
+1. Inherit from `StockDataProvider` abstract class
+2. Implement `fetch_data(symbol) -> StockData` method
+3. Handle errors and return valid `StockData` objects
+4. Add provider to app.py provider selection logic
+
+**JSON serialization:**
+Use `convert_for_json()` function in app.py for proper pandas Timestamp conversion when saving test data.
