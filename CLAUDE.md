@@ -117,14 +117,58 @@ In the Streamlit app, select "テストデータ" from the sidebar to use saved 
 - **JSON serialization:** pandas Timestamp objects require special handling for JSON saves
 - **Data inconsistency:** Some fields may be missing or None
 
+## Yahoo Finance API Data Format Documentation
+
+### Dividend Data Format
+Based on actual API response analysis:
+- **dividendYield**: Already in percentage format (e.g., `2.6` represents 2.6%, NOT 0.026)
+- **dividendRate**: Annual dividend amount in currency units (e.g., `1.20` for $1.20 per share)
+
+### PER Data Format
+- **trailingPE**: Trailing P/E ratio as numeric value (e.g., `15.5`)
+- **forwardPE**: Forward P/E ratio as numeric value (e.g., `12.8`)
+
+### Market Data Format
+- **marketCap**: Market capitalization in currency units (large integer)
+- **sharesOutstanding**: Number of shares outstanding (large integer)
+- **currentPrice/regularMarketPrice**: Stock price in currency units (float)
+
+### Example API Response Values
+```json
+{
+  "dividendYield": 2.6,           // Already percentage (2.6%)
+  "dividendRate": 1.20,           // Annual dividend ($1.20)
+  "trailingPE": 15.5,             // P/E ratio
+  "forwardPE": 12.8,              // Forward P/E ratio
+  "marketCap": 2500000000,        // Market cap ($2.5B)
+  "sharesOutstanding": 100000000, // 100M shares
+  "currentPrice": 25.50           // Stock price ($25.50)
+}
+```
+
+### Data Processing Notes
+- **dividendYield**: Used directly without multiplication (NOT × 100)
+- **Annual dividend calculation**: (dividendYield ÷ 100) × price when dividendRate unavailable
+- **Earnings yield**: Prioritizes (1 ÷ PE) over (EPS ÷ Price) for consistency with market standards
+
 ## Data Fields
 
 The application calculates and displays:
-- **昨年度益利回り (Last Year Earnings Yield):** (Trailing EPS / Price) * 100
-- **今年度予想益利回り (Forward Earnings Yield):** (Forward EPS / Price) * 100
-- **株式純資産利回り (BPR):** (BPS / Price) * 100 
-- **配当利回り (Dividend Yield):** Retrieved from yfinance dividendYield
-- Stock price, trailing EPS, forward EPS, BPS, and company name
+
+### 益利回り (Earnings Yield) Calculations
+- **今期決算時益利回り (Current Year Earnings Yield):** (1 / trailingPE) × 100, fallback: (Trailing EPS / Price) × 100
+- **次期益利回り(予想PER) (Next Year Earnings Yield - PER Based):** (1 / forwardPE) × 100, fallback: (Forward EPS / Price) × 100
+- **次期益利回り(時価総額) (Next Year Earnings Yield - Market Cap Based):** (Predicted Net Income / Market Cap) × 100
+  - Predicted Net Income = Forward EPS × Shares Outstanding
+
+### Other Financial Metrics
+- **株式純資産利回り (BPR):** (BPS / Price) × 100 
+- **配当利回り (Dividend Yield):** Retrieved from yfinance dividendYield (already in percentage format)
+- **年あたり配当 (Annual Dividend):** dividendRate or calculated as (dividendYield% ÷ 100) × Price
+
+### Display Data
+- Stock price, PER, forward PER, market cap, shares outstanding
+- Trailing EPS, forward EPS, BPS, and company name
 
 ## UI Features
 

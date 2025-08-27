@@ -141,7 +141,14 @@ class StockData:
         return self._bpr
     
     def dividend_yield_percent(self) -> Optional[float]:
-        """Get dividend yield as percentage"""
+        """
+        Get dividend yield as percentage
+        
+        Yahoo Finance API Data Format:
+        - dividendYield: Already in percentage format (e.g., 2.6 for 2.6%)
+        - NOT in decimal format (i.e., not 0.026 for 2.6%)
+        - Confirmed by observing actual API responses showing values like 2.60 instead of 0.026
+        """
         if self._dividend_yield_percent is None:
             if self._dividend_yield is not None:
                 # Yahoo Finance returns dividend yield already as percentage (e.g., 2.6 for 2.6%)
@@ -150,15 +157,25 @@ class StockData:
         return self._dividend_yield_percent
     
     def dividend_per_year(self) -> Optional[float]:
-        """Get annual dividend per share"""
+        """
+        Get annual dividend per share
+        
+        Yahoo Finance API Data Format:
+        - dividendRate: Annual dividend amount in currency units (e.g., 1.20 for $1.20)
+        - dividendYield: Already in percentage format (e.g., 2.6 for 2.6%)
+        
+        Fallback calculation: dividendYield(%) × price = annual dividend
+        Note: dividendYield is already percentage, so direct multiplication with price
+        """
         if self._dividend_per_year is None:
             # Try to get from info data
             dividend_rate = self._info.get('dividendRate')
             if dividend_rate is not None:
                 self._dividend_per_year = dividend_rate
             elif self._dividend_yield and self._price:
-                # Calculate from dividend yield
-                self._dividend_per_year = self._dividend_yield * self._price
+                # Calculate from dividend yield (dividendYield is already in percentage format)
+                # Formula: (dividendYield% ÷ 100) × price = annual dividend
+                self._dividend_per_year = (self._dividend_yield / 100) * self._price
         return self._dividend_per_year
     
     # Market Cap and Valuation Metrics
