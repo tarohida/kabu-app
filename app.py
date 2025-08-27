@@ -450,7 +450,7 @@ def main():
         else:
             default_symbols = "8194.T,9699.T,9715.T"  # Fallback
     else:
-        default_symbols = "AAPL,MSFT,GOOGL"  # Yahoo Finance default
+        default_symbols = "8194.T,9699.T,9715.T"  # Yahoo Finance default
 
     symbols_input = st.text_input("銘柄コードをカンマ区切りで入力してください（例: AAPL, MSFT, 7203.T）", value=default_symbols)
     
@@ -512,11 +512,13 @@ def main():
             "銘柄コード": stock_data.symbol(),
             "銘柄名": stock_data.company_name() or "取得失敗",
             "株価": stock_data.format_price(),
+            "今期決算時益利回り (%)": stock_data.format_current_year_earnings_yield(),
+            "次期決算時益利回り (%)": stock_data.format_next_year_earnings_yield(),
             "EPS": format_value(stock_data.eps()),
+            "Forward EPS": format_value(stock_data.forward_eps()),
             "BPS": format_value(stock_data.bps()),
             "配当利回り (%)": stock_data.format_dividend_yield(),
             "年あたり配当 (円)": format_value(stock_data.dividend_per_year()),
-            "株式益利回り (%)": stock_data.format_earnings_yield(),
             "株式純資産利回り (%)": stock_data.format_bpr(),
         })
     
@@ -543,8 +545,10 @@ def main():
         "銘柄コード",
         "銘柄名",
         "株価",
-        "株式益利回り (%)",
+        "今期決算時益利回り (%)",
+        "次期決算時益利回り (%)",
         "EPS",
+        "Forward EPS",
         "株式純資産利回り (%)",
         "BPS",
         "配当利回り (%)",

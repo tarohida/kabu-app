@@ -18,28 +18,31 @@ streamlit run app.py
 python test_stock_data.py
 ```
 
-**Install dependencies (manual):**
-Dependencies are managed via virtual environment. Key requirements:
-- streamlit
-- yfinance 
-- pandas
-- numpy
-
-**Activate virtual environment:**
+**Python Environment Setup:**
 ```bash
+# Activate virtual environment first
 source venv/bin/activate  # Linux/Mac
 # or
 venv\Scripts\activate     # Windows
+
+# Install dependencies (if venv doesn't exist)
+pip install streamlit yfinance pandas numpy
 ```
+
+**Core dependencies:**
+- streamlit - Web application framework
+- yfinance - Yahoo Finance API client
+- pandas - Data manipulation and JSON handling
+- numpy - Numeric computations
 
 ## Architecture Overview
 
 ### Core Components
 
 1. **app.py** - Main Streamlit application with dependency injection pattern
-   - `YahooFinanceProvider` - Live Yahoo Finance API data fetching with retry logic
-   - `TestDataProvider` - JSON file-based test data provider
-   - `StockDataProvider` - Abstract interface for data providers
+   - `StockDataProvider` - Abstract base class defining `fetch_data(symbol) -> StockData` interface
+   - `YahooFinanceProvider` - Live Yahoo Finance API with exponential backoff retry logic and caching
+   - `TestDataProvider` - JSON file-based test data provider with automatic file loading
 
 2. **stock_data.py** - Object-oriented data models
    - `StockData` - Individual stock with method-based parameter access
@@ -147,5 +150,11 @@ The application calculates and displays:
 3. Handle errors and return valid `StockData` objects
 4. Add provider to app.py provider selection logic
 
+**Error handling patterns:**
+- All data providers implement graceful degradation (return valid `StockData` with `None` values on failure)
+- Yahoo Finance provider uses exponential backoff retry (2 attempts with increasing delays)
+- Debug information captured for failed requests and displayed to users
+- Session-based caching (10-minute TTL) reduces API calls
+
 **JSON serialization:**
-Use `convert_for_json()` function in app.py for proper pandas Timestamp conversion when saving test data.
+Use `convert_for_json()` function in app.py for proper pandas Timestamp conversion when saving test data. Handles nested dictionaries, numpy types, and pandas Timestamps automatically.

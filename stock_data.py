@@ -98,6 +98,16 @@ class StockData:
             return (forward_eps / self._price) * 100
         return None
     
+    def current_year_earnings_yield(self) -> Optional[float]:
+        """Calculate current year earnings yield (今期決算時)"""
+        # Use trailing EPS as current year (most recent full year)
+        return self.earnings_yield()
+    
+    def next_year_earnings_yield(self) -> Optional[float]:
+        """Calculate next year earnings yield (次期決算時)"""
+        # Use forward EPS as next year estimate
+        return self.forward_earnings_yield()
+    
     def bpr(self) -> Optional[float]:
         """Calculate book-to-price ratio as percentage (BPS/Price * 100)"""
         if self._bpr is None:
@@ -246,6 +256,14 @@ class StockData:
     def format_earnings_yield(self, precision: int = 2) -> str:
         """Format earnings yield as percentage"""
         return self.format_percentage(self.earnings_yield(), precision)
+    
+    def format_current_year_earnings_yield(self, precision: int = 2) -> str:
+        """Format current year earnings yield as percentage"""
+        return self.format_percentage(self.current_year_earnings_yield(), precision)
+    
+    def format_next_year_earnings_yield(self, precision: int = 2) -> str:
+        """Format next year earnings yield as percentage"""
+        return self.format_percentage(self.next_year_earnings_yield(), precision)
     
     def format_bpr(self, precision: int = 2) -> str:
         """Format BPR as percentage"""
