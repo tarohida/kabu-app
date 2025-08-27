@@ -133,6 +133,19 @@ class StockData:
             return forward_eps * shares_outstanding
         return None
     
+    def net_income_actual(self) -> Optional[float]:
+        """Get actual net income (trailing EPS × shares outstanding)"""
+        trailing_eps = self.eps()
+        shares_outstanding = self.shares_outstanding()
+        
+        if trailing_eps and shares_outstanding:
+            return trailing_eps * shares_outstanding
+        return None
+    
+    def net_income_predicted(self) -> Optional[float]:
+        """Get predicted net income (forward EPS × shares outstanding)"""
+        return self._get_predicted_net_income()
+    
     def bpr(self) -> Optional[float]:
         """Calculate book-to-price ratio as percentage (BPS/Price * 100)"""
         if self._bpr is None:
@@ -347,12 +360,14 @@ class StockData:
             "予想PER": self.forward_pe_ratio(),
             "時価総額": self.market_cap(),
             "発行済み株式数": self.shares_outstanding(),
+            "純利益実績": self.net_income_actual(),
+            "純利益見込み": self.net_income_predicted(),
             "EPS": self._eps,
             "Forward EPS": self.forward_eps(),
-            "BPS": self._bps,
-            "株式純資産利回り (%)": self.format_bpr(),
             "配当利回り (%)": self.format_dividend_yield(),
             "年あたり配当 (円)": self.dividend_per_year(),
+            "株式純資産利回り (%)": self.format_bpr(),
+            "BPS": self._bps,
             "セクター": self.sector(),
             "業界": self.industry(),
             "国": self.country(),

@@ -525,12 +525,14 @@ def main():
             "予想PER": format_value(stock_data.forward_pe_ratio()),
             "時価総額": format_value(stock_data.market_cap()),
             "発行済み株式数": format_value(stock_data.shares_outstanding()),
+            "純利益実績": format_value(stock_data.net_income_actual()),
+            "純利益見込み": format_value(stock_data.net_income_predicted()),
             "EPS": format_value(stock_data.eps()),
             "Forward EPS": format_value(stock_data.forward_eps()),
-            "BPS": format_value(stock_data.bps()),
             "配当利回り (%)": stock_data.format_dividend_yield(),
             "年あたり配当 (円)": format_value(stock_data.dividend_per_year()),
             "株式純資産利回り (%)": stock_data.format_bpr(),
+            "BPS": format_value(stock_data.bps()),
         })
     
     # Clear progress indicators
@@ -563,12 +565,14 @@ def main():
         "予想PER",
         "時価総額",
         "発行済み株式数",
+        "純利益実績",
+        "純利益見込み",
         "EPS",
         "Forward EPS",
-        "株式純資産利回り (%)",
-        "BPS",
         "配当利回り (%)",
-        "年あたり配当 (円)"
+        "年あたり配当 (円)",
+        "株式純資産利回り (%)",
+        "BPS"
     ]
 
     # 最終的なDataFrame作成
