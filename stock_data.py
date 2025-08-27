@@ -5,9 +5,7 @@ Provides object-oriented interface for stock data with method-based parameter ac
 """
 
 import pandas as pd
-import numpy as np
 from typing import Optional, Dict, Any
-from datetime import datetime
 
 
 class StockData:
@@ -85,17 +83,26 @@ class StockData:
     
     # Calculated Financial Metrics
     def earnings_yield(self) -> Optional[float]:
-        """Calculate earnings yield as percentage (EPS/Price * 100)"""
+        """Calculate earnings yield as percentage (1/PER * 100)"""
         if self._earnings_yield is None:
-            if self._price and self._eps and self._price != 0:
+            per = self.pe_ratio()
+            if per is not None and per != 0:
+                self._earnings_yield = (1 / per) * 100
+            elif self._price and self._eps and self._price != 0:
+                # Fallback to direct calculation if PER not available
                 self._earnings_yield = (self._eps / self._price) * 100
         return self._earnings_yield
     
     def forward_earnings_yield(self) -> Optional[float]:
-        """Calculate forward earnings yield as percentage"""
-        forward_eps = self.forward_eps()
-        if self._price and forward_eps and self._price != 0:
-            return (forward_eps / self._price) * 100
+        """Calculate forward earnings yield as percentage (1/Forward PER * 100)"""
+        forward_per = self.forward_pe_ratio()
+        if forward_per is not None and forward_per != 0:
+            return (1 / forward_per) * 100
+        else:
+            # Fallback to direct calculation if Forward PER not available
+            forward_eps = self.forward_eps()
+            if self._price and forward_eps and self._price != 0:
+                return (forward_eps / self._price) * 100
         return None
     
     def current_year_earnings_yield(self) -> Optional[float]:
