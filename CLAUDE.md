@@ -151,6 +151,26 @@ Based on actual API response analysis:
 - **Annual dividend calculation**: (dividendYield ÷ 100) × price when dividendRate unavailable
 - **Earnings yield**: Prioritizes (1 ÷ PE) over (EPS ÷ Price) for consistency with market standards
 
+### Stock Split Considerations
+- **Actual Net Income**: Uses ONLY direct API values (`netIncomeToCommon`, `netIncome`) to avoid stock split calculation errors
+- **Predicted Net Income**: Prioritizes direct API estimates (e.g., `netIncomeEstimate`, `projectedNetIncome`) over calculations
+- **Fallback calculation**: Forward EPS × shares outstanding only when direct estimates unavailable
+- **Safety checks**: Values exceeding 1 quadrillion are considered data errors and filtered out
+
+### Net Income Data Sources Priority
+```
+Actual Net Income:
+1. netIncomeToCommon (preferred)
+2. netIncome  
+3. No calculation fallback
+
+Predicted Net Income:
+1. Direct estimate fields (netIncomeEstimate, projectedNetIncome, etc.)
+2. Analyst consensus fields
+3. Company guidance fields  
+4. Calculation fallback (Forward EPS × shares outstanding)
+```
+
 ## Data Fields
 
 The application calculates and displays:
