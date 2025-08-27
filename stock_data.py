@@ -111,9 +111,27 @@ class StockData:
         return self.earnings_yield()
     
     def next_year_earnings_yield(self) -> Optional[float]:
-        """Calculate next year earnings yield (次期決算時)"""
+        """Calculate next year earnings yield (次期決算時) - 予想PERベース"""
         # Use forward EPS as next year estimate
         return self.forward_earnings_yield()
+    
+    def next_year_earnings_yield_market_cap_based(self) -> Optional[float]:
+        """Calculate next year earnings yield based on market cap (時価総額ベース)"""
+        market_cap = self.market_cap()
+        predicted_net_income = self._get_predicted_net_income()
+        
+        if market_cap and predicted_net_income and market_cap != 0:
+            return (predicted_net_income / market_cap) * 100
+        return None
+    
+    def _get_predicted_net_income(self) -> Optional[float]:
+        """Get predicted net income from forward EPS and shares outstanding"""
+        forward_eps = self.forward_eps()
+        shares_outstanding = self.shares_outstanding()
+        
+        if forward_eps and shares_outstanding:
+            return forward_eps * shares_outstanding
+        return None
     
     def bpr(self) -> Optional[float]:
         """Calculate book-to-price ratio as percentage (BPS/Price * 100)"""
@@ -126,7 +144,9 @@ class StockData:
         """Get dividend yield as percentage"""
         if self._dividend_yield_percent is None:
             if self._dividend_yield is not None:
-                self._dividend_yield_percent = self._dividend_yield * 100
+                # Yahoo Finance returns dividend yield already as percentage (e.g., 2.6 for 2.6%)
+                # So we use the value directly without multiplication
+                self._dividend_yield_percent = self._dividend_yield
         return self._dividend_yield_percent
     
     def dividend_per_year(self) -> Optional[float]:
@@ -145,6 +165,10 @@ class StockData:
     def market_cap(self) -> Optional[int]:
         """Get market capitalization"""
         return self._info.get('marketCap')
+    
+    def shares_outstanding(self) -> Optional[int]:
+        """Get shares outstanding"""
+        return self._info.get('sharesOutstanding')
     
     def pe_ratio(self) -> Optional[float]:
         """Get P/E ratio (trailing)"""
@@ -269,8 +293,12 @@ class StockData:
         return self.format_percentage(self.current_year_earnings_yield(), precision)
     
     def format_next_year_earnings_yield(self, precision: int = 2) -> str:
-        """Format next year earnings yield as percentage"""
+        """Format next year earnings yield as percentage (予想PERベース)"""
         return self.format_percentage(self.next_year_earnings_yield(), precision)
+    
+    def format_next_year_earnings_yield_market_cap_based(self, precision: int = 2) -> str:
+        """Format next year earnings yield as percentage (時価総額ベース)"""
+        return self.format_percentage(self.next_year_earnings_yield_market_cap_based(), precision)
     
     def format_bpr(self, precision: int = 2) -> str:
         """Format BPR as percentage"""
@@ -295,9 +323,16 @@ class StockData:
             "銘柄コード": self.symbol(),
             "銘柄名": self.company_name() or "N/A",
             "株価": self.format_price(),
+            "今期決算時益利回り (%)": self.format_current_year_earnings_yield(),
+            "次期益利回り(予想PER) (%)": self.format_next_year_earnings_yield(),
+            "次期益利回り(時価総額) (%)": self.format_next_year_earnings_yield_market_cap_based(),
+            "PER": self.pe_ratio(),
+            "予想PER": self.forward_pe_ratio(),
+            "時価総額": self.market_cap(),
+            "発行済み株式数": self.shares_outstanding(),
             "EPS": self._eps,
+            "Forward EPS": self.forward_eps(),
             "BPS": self._bps,
-            "株式益利回り (%)": self.format_earnings_yield(),
             "株式純資産利回り (%)": self.format_bpr(),
             "配当利回り (%)": self.format_dividend_yield(),
             "年あたり配当 (円)": self.dividend_per_year(),

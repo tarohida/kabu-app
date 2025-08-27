@@ -400,7 +400,13 @@ def format_value(value):
     if value is None:
         return "取得失敗"
     try:
-        return f"{value:.2f}"
+        # Format large numbers (market cap, shares) with commas
+        if isinstance(value, int) and value > 1000000:
+            return f"{value:,}"
+        elif isinstance(value, float):
+            return f"{value:.2f}"
+        else:
+            return str(value)
     except Exception:
         return "取得失敗"
 
@@ -513,9 +519,12 @@ def main():
             "銘柄名": stock_data.company_name() or "取得失敗",
             "株価": stock_data.format_price(),
             "今期決算時益利回り (%)": stock_data.format_current_year_earnings_yield(),
-            "次期決算時益利回り (%)": stock_data.format_next_year_earnings_yield(),
+            "次期益利回り(予想PER) (%)": stock_data.format_next_year_earnings_yield(),
+            "次期益利回り(時価総額) (%)": stock_data.format_next_year_earnings_yield_market_cap_based(),
             "PER": format_value(stock_data.pe_ratio()),
             "予想PER": format_value(stock_data.forward_pe_ratio()),
+            "時価総額": format_value(stock_data.market_cap()),
+            "発行済み株式数": format_value(stock_data.shares_outstanding()),
             "EPS": format_value(stock_data.eps()),
             "Forward EPS": format_value(stock_data.forward_eps()),
             "BPS": format_value(stock_data.bps()),
@@ -548,9 +557,12 @@ def main():
         "銘柄名",
         "株価",
         "今期決算時益利回り (%)",
-        "次期決算時益利回り (%)",
+        "次期益利回り(予想PER) (%)",
+        "次期益利回り(時価総額) (%)",
         "PER",
         "予想PER",
+        "時価総額",
+        "発行済み株式数",
         "EPS",
         "Forward EPS",
         "株式純資産利回り (%)",
